@@ -24,8 +24,7 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":["hostname -I"]}' \
             --query 'Command.CommandId' \
-            --output text
-          )
+            --output text)
 
           sleep 30
 
