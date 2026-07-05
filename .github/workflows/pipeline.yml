@@ -13,32 +13,36 @@ permissions:
 jobs:
   verify_connection:
     uses: ./.github/workflows/test_connection.yml
-     id-token: write
-     contents: read
+    permissions:
+      id-token: write
+      contents: read
 
   test_fleet_health_envs:
     needs: verify_connection
     uses: ./.github/workflows/test_fleet_health.yml
-     id-token: write
+    permissions:
+      id-token: write
       contents: read
 
   smoke_test:
     needs: verify_connection
     uses: ./.github/workflows/smoke_test.yml
-     id-token: write
+    permissions:
+      id-token: write
       contents: read
 
   build_push:
     needs: verify_connection
     uses: ./.github/workflows/build_push.yml
-     id-token: write
+    permissions:
+      id-token: write
       contents: read
 
   deploy_test:
     needs: verify_connection
     uses: ./.github/workflows/deploy.yml
-     id-token: write
+    permissions:
+      id-token: write
       contents: read
-
 
 
