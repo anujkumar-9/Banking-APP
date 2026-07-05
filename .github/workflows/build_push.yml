@@ -1,12 +1,22 @@
-name : building and push
-
 on:
-  workflow_dispatch
+  workflow_call:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  working-job:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-      - name : Echo Message
-        run : echo "build and push successfully ✅"
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::499989195637:role/github-action-deploy-role
+          aws-region: us-east-1
+
+      - name: Test connection
+        run: aws sts get-caller-identity
