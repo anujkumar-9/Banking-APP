@@ -1,8 +1,7 @@
-name: Test Fleet health and Env Variables
+name: Test Fleet Health and Env Variables
 
 on:
   workflow_call:
-
 
 permissions:
   id-token: write
@@ -11,48 +10,62 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::720800607391:role/github-action-deploy-role
+          role-to-assume: arn:aws:iam::499989195637:role/git-action-deploy-role
           aws-region: us-east-1
 
       - name: Fleet Health Checks
         id: health
+        shell: bash
         run: |
           CMD_ID=$(aws ssm send-command \
             --targets "Key=tag:App,Values=flask" \
             --document-name "AWS-RunShellScript" \
-            --parameters '{"commands":[
-              "hostname -I",
-              "docker --version 2>/dev/null  echo DOCKER NOT INSTALLED",
-              "aws --version 2>/dev/null  echo AWS CLI NOT INSTALLED",
-              "mysql --version 2>/dev/null || echo DOCKER NOT INSTALLED",
-              "aws ssm get-parameters-by-path --path /application/banking --with-decryption --region us-east-1"
-              ]}' \
-            --query 'Command.CommandId' --output text \
-            --region us-east-1)
-          echo "cmd_id"=$"CMD_ID" >> $GITHUB_OUTPUT
-      
-      
-      - name: Show Results
-        run:   
-          sleep 20
-          aws ssm list-command-invocations \
-            --command-id "${{steps.health.outputs.cmd_id}}" --details \
-            --region us-east-1
-            --query "CommandInvocations[*].{Instance:InstanceId,Status,IP:CommandPlugins[0].Output}" \
-            --output text
-          
-          FAILED=$(aws ssm list-command-invocations \
-            --command-id "${{steps.health.outputs.cmd_id}}" --details \
-            --query "length(CommandInvocations[?Status=='Failed'])" \
+            --parameters '{
+              "commands":[
+                "hostname -I",
+                "docker --version 2>/dev/null || echo DOCKER_NOT_INSTALLED",
+                "aws --version 2>/dev/null || echo AWS_CLI_NOT_INSTALLED",
+                "mysql --version 2>/dev/null || echo MYSQL_NOT_INSTALLED",
+                "aws ssm get-parameters-by-path --path /application/banking --with-decryption --region us-east-1"
+              ]
+            }' \
+            --query "Command.CommandId" \
             --output text \
-            --region us-east-1
-            )
+            --region us-east-1)
 
-          [ "$FAILED" -gt 0 ] && \
-          echo "::error::Health Check Failed on $FAILED instances" && \
-          exit 1
+          echo "cmd_id=$CMD_ID" >> "$GITHUB_OUTPUT"
 
-          echo "ALL Instances Healthy ✅"
+      - name: Wait for command to finish
+        run: sleep 20
+
+      - name: Show Results
+        shell: bash
+        run: |
+          aws ssm list-command-invocations \
+            --command-id "${{ steps.health.outputs.cmd_id }}" \
+            --details \
+            --region us-east-1 \
+            --query "CommandInvocations[*].{Instance:InstanceId,Status:Status,Output:CommandPlugins[0].Output}" \
+            --output table
+
+          FAILED=$(aws ssm list-command-invocations \
+            --command-id "${{ steps.health.outputs.cmd_id }}" \
+            --details \
+            --region us-east-1 \
+            --query "length(CommandInvocations[?Status=='Failed'])" \
+            --output text)
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo "::error::$FAILED instance(s) failed the health check."
+            exit 1
+          fi
+
+          echo "✅ All instances are healthy."
