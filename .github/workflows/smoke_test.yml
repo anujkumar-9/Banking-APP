@@ -20,3 +20,4 @@ jobs:
 
       - name: Test connection
         run: aws sts get-caller-identity
+        
