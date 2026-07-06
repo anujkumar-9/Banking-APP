@@ -1,7 +1,7 @@
 name: Inyializing Database
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
 
   permissions:
     id-token: write
