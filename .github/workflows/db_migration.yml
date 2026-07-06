@@ -1,0 +1,29 @@
+name: Inyializing Database
+
+on:
+  workflow_dispatch
+
+  permissions:
+    id-token: write
+    contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::499989195637:role/git-action-deploy-role
+          aws-region: us-east-1
+     
+
+      - name: Upload file on S3
+        run: |
+          aws s3 mb s3://720800607391-devops-scripts --region us-east-1 2>/dev/null || true
+          aws s3 cp init.sql s3://720800607391-devops-scripts/init.sql 
+          aws s3 cp init.py s3://720800607391-devops-scripts/init.py 
+          echo "✅ Files Uploaded to bucket.."
