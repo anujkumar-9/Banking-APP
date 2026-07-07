@@ -43,7 +43,7 @@ jobs:
         run: |
           aws s3 mb s3://${{ env.S3_BUCKET }} --region ${{ env.REGION }} 2>/dev/null || true
 
-          aws s3 cp docker-compose.yml \
+          aws s3 cp docker_compose.yml \
             s3://${{ env.S3_BUCKET }}/docker-compose.yml \
             --region ${{ env.REGION }}
 
