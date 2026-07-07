@@ -1,22 +1,40 @@
 on:
   workflow_call:
 
+  
 permissions:
   id-token: write
-  contents: read
+  contents: read  
+
+env:
+  VERSION: v1
+  IMAGE: 499989195637.dkr.ecr.us-east-1.amazonaws.com/flaskapp-simple-bank
+  REGION: us-east-1
+  S3_BUCKET: s3://499989195637-devops-scripts
 
 jobs:
-  test:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: Anujkumar-9/Banking-App
+          ref: main
 
-      - name: Configure AWS
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::499989195637:role/git-action-deploy-role
-          aws-region: us-east-1
+          aws-region: ${{ env.REGION }}
 
-      - name: Test connection
-        run: aws sts get-caller-identity
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ env.REGION }} | \
+          docker login --username AWS --password-stdin \
+         499989195637.dkr.ecr.${{ env.REGION }}.amazonaws.com
+          echo "Login Successfull to ECR ✅"
+
+      - name: Upload Docker-Compose to S3
+        run: |
+          aws s3 mb ${{ env.S3_BUCKET }} --region ${{ env.REGION }} 2>/dev/null || true
+          aws s3 cp docker-compose.yml ${{ env.S3_BUCKET }}/docker-compose.yml --region ${{ env.REGION }}
+          echo "Docker compose Uploaded ✅"
