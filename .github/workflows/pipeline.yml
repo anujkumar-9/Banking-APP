@@ -31,15 +31,11 @@ jobs:
       id-token: write
       contents: read
 
-  build_push:
-    needs: verify_connection
-    uses: ./.github/workflows/build_push.yml
-    permissions:
-      id-token: write
-      contents: read
-
   deploy_test:
-    needs: verify_connection
+    needs:
+      - verify_connection
+      - test_fleet_health_envs
+      - smoke_test
     uses: ./.github/workflows/deploy.yml
     permissions:
       id-token: write
